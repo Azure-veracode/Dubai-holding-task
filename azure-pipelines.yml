@@ -1,0 +1,39 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  BUILD_ID: '45787971'   # ← replace with your Veracode build ID
+
+steps:
+# 1️⃣ Pull Veracode API Wrapper image
+- script: |
+    docker pull veracode/api-wrapper-java
+  displayName: 'Pull Veracode API Wrapper Docker Image'
+
+# 2️⃣ Download Detailed Report PDF
+- script: |
+    mkdir -p target
+    docker run --rm \
+      -v "$(System.DefaultWorkingDirectory)":/work \
+      -w /work \
+      -e VERACODE_API_ID="$(VERACODE_API_ID)" \
+      -e VERACODE_API_KEY="$(VERACODE_API_KEY)" \
+      veracode/api-wrapper-java \
+      java -jar /opt/veracode/api-wrapper.jar \
+        -vid "$(VERACODE_API_ID)" \
+        -vkey "$(VERACODE_API_KEY)" \
+        -action detailedreport \
+        -buildid "$(BUILD_ID)" \
+        -format pdf \
+        -outputfilepath "./target/detailedreport.pdf"
+  displayName: 'Download Veracode Detailed Report PDF'
+
+# 3️⃣ Publish the PDF to pipeline artifacts
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Veracode Detailed Report PDF'
+  inputs:
+    targetPath: '$(System.DefaultWorkingDirectory)/target/detailedreport.pdf'
+    artifact: 'veracode-detailed-report'
+    publishLocation: 'pipeline'
