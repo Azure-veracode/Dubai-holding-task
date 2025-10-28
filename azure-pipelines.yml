@@ -16,6 +16,7 @@ steps:
 - script: |
     mkdir -p target
     docker run --rm \
+      -u $(id -u):$(id -g) \
       -v "$(System.DefaultWorkingDirectory)":/work \
       -w /work \
       -e VERACODE_API_ID="$(VERACODE_API_ID)" \
@@ -28,7 +29,11 @@ steps:
         -buildid "$(BUILD_ID)" \
         -format pdf \
         -outputfilepath "./target/detailedreport.pdf"
+
+    # ✅ verify file exists (do not execute it)
+    ls -l ./target/detailedreport.pdf
   displayName: 'Download Veracode Detailed Report PDF'
+
 
 # 3️⃣ Publish the PDF to pipeline artifacts
 - task: PublishPipelineArtifact@1
